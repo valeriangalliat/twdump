@@ -13,6 +13,10 @@ isn't easily scriptable and is limited to your own data.
 3200 tweets of an account (the API don't allow to dump more than this),
 and can dump the tweets fresher than a tweet ID.
 
+The output is the raw JSON from Twitter API. Each line of output contains
+the JSON object representing a tweet, so you should not parse the whole
+output as JSON; get it line by line and parse each line at once.
+
 Dependencies
 ------------
 
