@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+
+'''Usage: twdump [options] <name>
+
+Arguments:
+  <name>  Get tweets for given account <name>.
+
+Options:
+  -h --help            Show this screen.
+  --version            Show version.
+  -s, --since=<since>  Get tweets greater than <since> ID (get everything
+                       by default).
+'''
+
+import json
+import subprocess
+import sys
+
+from docopt import docopt
+from urllib.parse import urlencode
+
+
+class FriendlyError(Exception):
+    pass
+
+
+class OutputCalledProcessError(subprocess.CalledProcessError, FriendlyError):
+    '''Extend `CalledProcessError` to print the error output in the
+    exception string.'''
+
+    def __str__(self):
+        text = subprocess.CalledProcessError.__str__(self)
+
+        if self.output is None or self.output.strip() == '':
+            return text
+
+        return '{0}\n\n{1}'.format(text, self.output.strip())
+
+
+class TimelineError(FriendlyError):
+    '''Pretty message for timeline error.'''
+
+    @classmethod
+    def from_dict(cls, dict, url):
+        return cls(dict['message'], dict['code'], url)
+
+    def __init__(self, text, code, url):
+        self.text = text
+        self.code = code
+        self.url = url
+
+    def __str__(self):
+        return 'API returned error {0}: {1}\nURL: {2}'.format(
+            self.code, self.text, self.url)
+
+
+class TimelineErrors(FriendlyError):
+    '''Container for multiple `TimelineError`.'''
+
+    @classmethod
+    def from_list(cls, list, url):
+        return cls([TimelineError.from_dict(e, url) for e in list])
+
+    def __init__(self, errors):
+        self.errors = errors
+
+    def __str__(self):
+        return '\n'.join([str(e) for e in self.errors])
+
+
+def timeline(**kwargs):
+    '''Get Twitter timeline API result.
+
+    All named arguments are passed to the API.
+    See <https://dev.twitter.com/docs/api/1/get/statuses/user_timeline>.
+
+    Any `None` argument is ignored.
+
+    If you want more than 200 tweets, you should use `itimeline`.
+
+        tweets = timeline(exclude_replies=True, count=200)
+
+    You can for example pass it a `max_id` if you want all tweets before
+    (including) the given tweet ID.
+
+    This function raises a `subprocess.CalledProcessError` if the `twurl`
+    command fails.
+    '''
+
+    path = '/1.1/statuses/user_timeline.json'
+
+    # Ignore `None` fields.
+    query = {k: v for k, v in kwargs.items() if v is not None}
+
+    # Change `True` and `False` to lower case.
+    for k, v in query.items():
+        if type(v) == bool:
+            query[k] = str(v).lower()
+
+    url = '{0}?{1}'.format(path, urlencode(query))
+
+
+    process = subprocess.Popen(['twurl', url], stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+
+    out, err = process.communicate()
+
+    if process.returncode != 0:
+        output = err.decode('utf-8')
+        raise OutputCalledProcessError(process.returncode, 'twurl',  output)
+
+    tweets = json.loads(out.decode('utf-8'))
+
+    if 'errors' in tweets:
+        raise TimelineErrors.from_list(tweets['errors'], url)
+
+    return tweets
+
+
+def itimeline(**kwargs):
+    '''Iterate over a Twitter timeline.
+
+    All named arguments are passed to `timeline`. The `count` parameter
+    will be the buffer size for all requests.
+
+    Tweets are iterated in reverse chronological order. You can provide a
+    `since_id` to get all tweets greater than the given ID.
+
+        itimeline(exclude_replies=True, count=200, since_id=12345)
+    '''
+
+    tweets = timeline(**kwargs)
+
+    while len(tweets):
+        for tweet in tweets:
+            yield tweet
+
+        tweets = timeline(max_id=tweet['id'] - 1, **kwargs)
+
+
+def main():
+    args = docopt(__doc__, version='Twdump 1.0')
+
+    name = args['<name>']
+    since = args['--since']
+
+    if since is not None:
+        since = int(since)
+
+    tweets = itimeline(screen_name=name, exclude_replies=True, count=200,
+                       since_id=since)
+
+    try:
+        # Dump all tweets, one JSON object per line.
+        for tweet in tweets:
+            print(json.dumps(tweet))
+    except (FriendlyError) as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
