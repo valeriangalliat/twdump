@@ -53,3 +53,11 @@ Dump all your tweets greater than the tweet with ID 12345:
 ```sh
 ./twdump -s 12345 youraccount
 ```
+
+Bugs
+----
+
+Actually, since I don't want to dump the replies, I disabled this directly
+in the code, but this should be a commandline option. Maybe something
+like `./twdump -o exclude_replies`, thus allowing to customize all other
+API parameters (`./twdump -o count=42` for example).
