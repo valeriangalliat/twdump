@@ -153,7 +153,7 @@ def main():
         # Dump all tweets, one JSON object per line.
         for tweet in tweets:
             print(json.dumps(tweet))
-    except (FriendlyError) as e:
+    except FriendlyError as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)
 
