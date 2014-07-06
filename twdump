@@ -1,115 +1,41 @@
 #!/usr/bin/env python3
 
-import base64
-import functools
-import getopt
-import hashlib
-import hmac
-import json
-import operator
-import os
-import random
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
+'''Usage: twdump [options] <name>
+
+Arguments:
+  <name>  Twitter screen name.
+
+Options:
+  -h, --help                  Show this screen.
+  --version                   Show version.
+  -s, --since=<since>         Get tweets greater than <since> ID (get
+                              everything by default).
+  --config=<config>           Config file. Auth keys will be read from this
+                              file if not given by commandline options.
+  --consumer-key=<key>        Application API key.
+  --consumer-secret=<secret>  Application API secret.
+  --oauth-token=<token>       Client OAuth token.
+  --oauth-secret=<secret>     Client OAuth secret.
+'''
+
+import sys
+
+from configobj import ConfigObj
+from docopt import docopt
+from twitter import Twitter, OAuth
 
 
-urlencode = functools.partial(urllib.parse.urlencode, safe='')
-quote = functools.partial(urllib.parse.quote, safe='')
+class FriendlyError(Exception):
+    '''Display a friendly error.
 
-
-def oauth(consumer_key, consumer_secret, oauth_token, oauth_secret):
-    '''Create an OAuth encode method for given credentials.'''
-
-    sig_key = '&'.join([quote(consumer_secret), quote(oauth_secret)])
-    sig_key = str.encode(sig_key)
-
-    def sign(method, base_url, params):
-        '''Sign given parameters and return an urlencoded string.'''
-
-        params = params.copy()
-
-        params['oauth_consumer_key'] = consumer_key
-        params['oauth_nonce'] = str(random.getrandbits(64))
-        params['oauth_signature_method'] = 'HMAC-SHA1'
-        params['oauth_timestamp'] = str(int(time.time()))
-        params['oauth_token'] = oauth_token
-        params['oauth_version'] = '1.0'
-
-        params = urlencode(sorted(params.items()))
-
-        sig_base = [method.upper(), base_url, params]
-        sig_base = '&'.join(quote(i) for i in sig_base)
-        sig_base = str.encode(sig_base)
-
-        digest = hmac.new(sig_key, sig_base, hashlib.sha1).digest()
-        sig = base64.b64encode(digest)
-
-        return params + '&oauth_signature=' + quote(sig)
-
-    return sign
-
-
-def charset(headers, default='utf_8'):
-    '''Extract the charset from given HTTP headers.'''
-
-    for k, v in headers:
-        if k != 'content-type':
-            continue
-
-        v = v.split(';')
-
-        if len(v) < 2:
-            return default
-
-        v = v[1].split('=')
-
-        if len(v) < 2:
-            return default
-
-        if v[0].strip() != 'charset':
-            return default
-
-        return v[1].strip()
-
-
-def body(res, default_charset='utf_8'):
-    '''Get decoded HTTP response body regarding of response headers.'''
-    return res.read().decode(charset(res.getheaders(), default_charset))
-
-
-def timeline(sign, **kwargs):
-    '''Get Twitter timeline API result.
-
-    All named arguments are passed to the API.
-    See <https://dev.twitter.com/docs/api/1/get/statuses/user_timeline>.
-
-    Any `None` argument is ignored.
-
-    If you want more than 200 tweets, you should use `itimeline`.
-
-        tweets = timeline(exclude_replies=True, count=200)
-
-    You can for example pass it a `max_id` if you want all tweets before
-    (including) the given tweet ID.
-
-    This function raises a `subprocess.CalledProcessError` if the `twurl`
-    command fails.
+    The error should be displayed in `stderr` instead of dumping a Python
+    stack trace, and the program should return a non-zero exit code.
     '''
 
-    base_url = 'https://api.twitter.com/1.1/statuses/user_timeline.json'
-    params = {k: v for k, v in kwargs.items() if v is not None}
-
-    signed_params = sign('GET', base_url, params)
-    url = '?'.join([base_url, signed_params])
-
-    res = urllib.request.urlopen(url)
-
-    return json.loads(body(res))
+    pass
 
 
-def itimeline(sign, **kwargs):
+def itimeline(timeline, **kwargs):
     '''Iterate over a Twitter timeline.
 
     All named arguments are passed to `timeline`. The `count` parameter
@@ -118,10 +44,10 @@ def itimeline(sign, **kwargs):
     Tweets are iterated in reverse chronological order. You can provide a
     `since_id` to get all tweets greater than the given ID.
 
-        itimeline(exclude_replies=True, count=200, since_id=12345)
+        itimeline(timeline, exclude_replies=True, count=200, since_id=12345)
     '''
 
-    tweets = timeline(sign, **kwargs)
+    tweets = timeline(**kwargs)
 
     while len(tweets):
         for tweet in tweets:
@@ -130,38 +56,60 @@ def itimeline(sign, **kwargs):
         tweets = timeline(max_id=tweet['id'] - 1, **kwargs)
 
 
-def load_config(fp):
-    config = {}
+def ignore_none(f):
+    '''Decorator to ignore keyword arguments set to `None`.'''
 
-    for line in fp:
-        line = line.strip()
+    def inner(*args, **kwargs):
+        # Remove arguments with `None` value
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
 
-        if line == '' or line[0] == '#':
-            continue
+        # Proxy call
+        return f(*args, **kwargs)
 
-        k, v = line.split('=')
-
-        config[k.strip()] = v.strip()
-
-    return config
+    return inner
 
 
-import config
+def get_auth(args):
+    keys = ['consumer_key', 'consumer_secret', 'oauth_token', 'oauth_secret']
+    config_file = args['--config']
+
+    if config_file is not None:
+        config = ConfigObj(config_file)
+        err = lambda x: 'Missing key `{0}` in `{1}`.'.format(x, config_file)
+    else:
+        kta = lambda x: '--' + x.replace('_', '-') # Key to arg
+        kas = {k: kta(k) for k in keys} # Key args dict
+
+        config = {k: args[a] for k, a in kas.items() if args[a] is not None}
+        err = lambda x: 'Missing argument `{0}`.'.format(kas[x])
+
+    try:
+        auth = {key: config[key] for key in keys}
+    except KeyError as e:
+        raise FriendlyError(err(e.args[0]))
+
+    return OAuth(auth['oauth_token'], auth['oauth_secret'],
+                 auth['consumer_key'], auth['consumer_secret'])
+
 
 def main():
+    args = docopt(__doc__, version='0.1')
 
-    print(load_config(open('twdump.ini', 'r')))
-    return
+    name = args['<name>']
+    since = args['--since']
 
+    twitter = Twitter(auth=get_auth(args))
 
-    return
+    tweets = itimeline(ignore_none(twitter.statuses.user_timeline)
+                       screen_name=name, count=2, since_id=since)
 
-    sign = oauth(consumer_key, consumer_secret, oauth_token, oauth_secret)
-
-    tweets = timeline(sign, screen_name='valeriangalliat', count=10)
-
-    print(tweets)
+    for tweet in tweets:
+        print(tweet)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except FriendlyError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
