@@ -21,20 +21,17 @@ Dependencies
 ------------
 
 * `python3`
-* `docopt` <https://github.com/docopt/docopt>
-* `twurl` <https://github.com/twitter/twurl>
+* `configobj` <https://pypi.python.org/pypi/configobj/5.0.5>
+* `docopt` <https://pypi.python.org/pypi/docopt/0.6.2>
+* `twitter` <https://pypi.python.org/pypi/twitter>
 
 Installation
 ------------
 
-After installing the dependencies above, you need to configure `twurl` with
-your API key and secret.
+After installing the dependencies above, you'll need to retrieve your
+Twitter consumer key, secret, OAuth token and secret.
 
-```sh
-twurl --consumer-secret [secret] --access-token [token]
-```
-
-To get a secret and token, you need to [create a Twitter application](https://apps.twitter.com/app/new).
+To get these, you need to [create a Twitter application](https://apps.twitter.com/app/new).
 Once created, you'll find the keys in the "API Keys" tab.
 
 Then, clone this repository and you can call `./twdump`.
@@ -45,19 +42,33 @@ Examples
 Dump all tweets for your account:
 
 ```sh
-./twdump youraccount
+./twdump \
+    --consumer-key "$consumer_key" \
+    --consumer-secret "$consumer_key" \
+    --oauth-token "$consumer_token" \
+    --oauth-key "$consumer_key" \
+    youraccount
+```
+
+Or with a config file to avoid passing all the commandline arguments:
+
+```ini
+#
+# ./twdump.conf
+#
+
+consumer_key = ...
+consumer_secret = ...
+oauth_token = ...
+oauth_secret = ...
+```
+
+```sh
+./twdump --config twdump.conf youraccount
 ```
 
 Dump all your tweets greater than the tweet with ID 12345:
 
 ```sh
-./twdump -s 12345 youraccount
+./twdump --config twdump.conf --since 12345 youraccount
 ```
-
-Bugs
-----
-
-Actually, since I don't want to dump the replies, I disabled this directly
-in the code, but this should be a commandline option. Maybe something
-like `./twdump -o exclude_replies`, thus allowing to customize all other
-API parameters (`./twdump -o count=42` for example).
