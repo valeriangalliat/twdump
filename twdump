@@ -1,74 +1,85 @@
 #!/usr/bin/env python3
 
-'''Usage: twdump [options] <name>
-
-Arguments:
-  <name>  Get tweets for given account <name>.
-
-Options:
-  -h --help            Show this screen.
-  --version            Show version.
-  -s, --since=<since>  Get tweets greater than <since> ID (get everything
-                       by default).
-'''
-
+import base64
+import functools
+import getopt
+import hashlib
+import hmac
 import json
-import subprocess
-import sys
-
-from docopt import docopt
-from urllib.parse import urlencode
-
-
-class FriendlyError(Exception):
-    pass
+import operator
+import os
+import random
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 
 
-class OutputCalledProcessError(subprocess.CalledProcessError, FriendlyError):
-    '''Extend `CalledProcessError` to print the error output in the
-    exception string.'''
-
-    def __str__(self):
-        text = subprocess.CalledProcessError.__str__(self)
-
-        if self.output is None or self.output.strip() == '':
-            return text
-
-        return '{0}\n\n{1}'.format(text, self.output.strip())
+urlencode = functools.partial(urllib.parse.urlencode, safe='')
+quote = functools.partial(urllib.parse.quote, safe='')
 
 
-class TimelineError(FriendlyError):
-    '''Pretty message for timeline error.'''
+def oauth(consumer_key, consumer_secret, oauth_token, oauth_secret):
+    '''Create an OAuth encode method for given credentials.'''
 
-    @classmethod
-    def from_dict(cls, dict, url):
-        return cls(dict['message'], dict['code'], url)
+    sig_key = '&'.join([quote(consumer_secret), quote(oauth_secret)])
+    sig_key = str.encode(sig_key)
 
-    def __init__(self, text, code, url):
-        self.text = text
-        self.code = code
-        self.url = url
+    def sign(method, base_url, params):
+        '''Sign given parameters and return an urlencoded string.'''
 
-    def __str__(self):
-        return 'API returned error {0}: {1}\nURL: {2}'.format(
-            self.code, self.text, self.url)
+        params = params.copy()
+
+        params['oauth_consumer_key'] = consumer_key
+        params['oauth_nonce'] = str(random.getrandbits(64))
+        params['oauth_signature_method'] = 'HMAC-SHA1'
+        params['oauth_timestamp'] = str(int(time.time()))
+        params['oauth_token'] = oauth_token
+        params['oauth_version'] = '1.0'
+
+        params = urlencode(sorted(params.items()))
+
+        sig_base = [method.upper(), base_url, params]
+        sig_base = '&'.join(quote(i) for i in sig_base)
+        sig_base = str.encode(sig_base)
+
+        digest = hmac.new(sig_key, sig_base, hashlib.sha1).digest()
+        sig = base64.b64encode(digest)
+
+        return params + '&oauth_signature=' + quote(sig)
+
+    return sign
 
 
-class TimelineErrors(FriendlyError):
-    '''Container for multiple `TimelineError`.'''
+def charset(headers, default='utf_8'):
+    '''Extract the charset from given HTTP headers.'''
 
-    @classmethod
-    def from_list(cls, list, url):
-        return cls([TimelineError.from_dict(e, url) for e in list])
+    for k, v in headers:
+        if k != 'content-type':
+            continue
 
-    def __init__(self, errors):
-        self.errors = errors
+        v = v.split(';')
 
-    def __str__(self):
-        return '\n'.join([str(e) for e in self.errors])
+        if len(v) < 2:
+            return default
+
+        v = v[1].split('=')
+
+        if len(v) < 2:
+            return default
+
+        if v[0].strip() != 'charset':
+            return default
+
+        return v[1].strip()
 
 
-def timeline(**kwargs):
+def body(res, default_charset='utf_8'):
+    '''Get decoded HTTP response body regarding of response headers.'''
+    return res.read().decode(charset(res.getheaders(), default_charset))
+
+
+def timeline(sign, **kwargs):
     '''Get Twitter timeline API result.
 
     All named arguments are passed to the API.
@@ -87,36 +98,18 @@ def timeline(**kwargs):
     command fails.
     '''
 
-    path = '/1.1/statuses/user_timeline.json'
+    base_url = 'https://api.twitter.com/1.1/statuses/user_timeline.json'
+    params = {k: v for k, v in kwargs.items() if v is not None}
 
-    # Ignore `None` fields.
-    query = {k: v for k, v in kwargs.items() if v is not None}
+    signed_params = sign('GET', base_url, params)
+    url = '?'.join([base_url, signed_params])
 
-    # Change `True` and `False` to lower case.
-    for k, v in query.items():
-        if type(v) == bool:
-            query[k] = str(v).lower()
+    res = urllib.request.urlopen(url)
 
-    url = '{0}?{1}'.format(path, urlencode(query))
-
-    process = subprocess.Popen(['twurl', url], stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-
-    out, err = process.communicate()
-
-    if process.returncode != 0:
-        output = err.decode('utf-8')
-        raise OutputCalledProcessError(process.returncode, 'twurl',  output)
-
-    tweets = json.loads(out.decode('utf-8'))
-
-    if 'errors' in tweets:
-        raise TimelineErrors.from_list(tweets['errors'], url)
-
-    return tweets
+    return json.loads(body(res))
 
 
-def itimeline(**kwargs):
+def itimeline(sign, **kwargs):
     '''Iterate over a Twitter timeline.
 
     All named arguments are passed to `timeline`. The `count` parameter
@@ -128,7 +121,7 @@ def itimeline(**kwargs):
         itimeline(exclude_replies=True, count=200, since_id=12345)
     '''
 
-    tweets = timeline(**kwargs)
+    tweets = timeline(sign, **kwargs)
 
     while len(tweets):
         for tweet in tweets:
@@ -137,25 +130,37 @@ def itimeline(**kwargs):
         tweets = timeline(max_id=tweet['id'] - 1, **kwargs)
 
 
+def load_config(fp):
+    config = {}
+
+    for line in fp:
+        line = line.strip()
+
+        if line == '' or line[0] == '#':
+            continue
+
+        k, v = line.split('=')
+
+        config[k.strip()] = v.strip()
+
+    return config
+
+
+import config
+
 def main():
-    args = docopt(__doc__, version='Twdump 1.0')
 
-    name = args['<name>']
-    since = args['--since']
+    print(load_config(open('twdump.ini', 'r')))
+    return
 
-    if since is not None:
-        since = int(since)
 
-    tweets = itimeline(screen_name=name, exclude_replies=True, count=200,
-                       since_id=since)
+    return
 
-    try:
-        # Dump all tweets, one JSON object per line.
-        for tweet in tweets:
-            print(json.dumps(tweet))
-    except FriendlyError as e:
-        print(str(e), file=sys.stderr)
-        sys.exit(1)
+    sign = oauth(consumer_key, consumer_secret, oauth_token, oauth_secret)
+
+    tweets = timeline(sign, screen_name='valeriangalliat', count=10)
+
+    print(tweets)
 
 
 if __name__ == '__main__':
