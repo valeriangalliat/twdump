@@ -100,7 +100,7 @@ def main():
 
     twitter = Twitter(auth=get_auth(args))
 
-    tweets = itimeline(ignore_none(twitter.statuses.user_timeline)
+    tweets = itimeline(ignore_none(twitter.statuses.user_timeline),
                        screen_name=name, count=2, since_id=since)
 
     for tweet in tweets:
