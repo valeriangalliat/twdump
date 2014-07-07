@@ -10,6 +10,7 @@ Options:
   --version                   Show version.
   -s, --since=<since>         Get tweets greater than <since> ID (get
                               everything by default).
+  -m, --max=<max>             Get tweets older than <max> ID.
   --config=<config>           Config file. Auth keys will be read from this
                               file if not given by commandline options.
   --consumer-key=<key>        Application API key.
@@ -97,11 +98,12 @@ def main():
 
     name = args['<name>']
     since = args['--since']
+    max = args['--max']
 
     twitter = Twitter(auth=get_auth(args))
 
     tweets = itimeline(ignore_none(twitter.statuses.user_timeline),
-                       screen_name=name, count=2, since_id=since)
+                       screen_name=name, count=2, since_id=since, max_id=max)
 
     for tweet in tweets:
         print(tweet)
