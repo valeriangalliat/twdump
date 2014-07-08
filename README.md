@@ -36,6 +36,18 @@ Once created, you'll find the keys in the "API Keys" tab.
 
 Then, clone this repository and you can call `./twdump`.
 
+Bugs
+----
+
+* A `twitter.api.TwitterHTTPError` exception is raised when the API rate
+  limit is exceeded. In this case, you should retrieve the last ID from the
+  output and pass it to the `--max` option, so it will continue fetching
+  tweets older than the max ID.
+
+  Since the `--max` option *includes* the given ID, it will result in a
+  duplicate tweet if you dump it in the same file. To avoid this, you
+  can just substract 1 to the ID.
+
 Examples
 --------
 
