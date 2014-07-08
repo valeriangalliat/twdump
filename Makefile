@@ -1,4 +1,4 @@
 all: lint
 
 lint:
-	pep8 twdump
+	pep8 twdump twdump-sort
