@@ -9,6 +9,7 @@ Options:
   -h, --help     Show this screen.
   --version      Show version.
   -r, --reverse  Reverse the result.
+  -u, --unique   Make sure every output tweet is unique (based on the ID).
 '''
 
 import io
@@ -67,11 +68,34 @@ class SeekableFile(File):
         self.file = copy
 
 
+def unique(iterable, key=None):
+    '''Deduplicate a sorted iterable based on given key.'''
+
+    iterator = iter(iterable)
+
+    if key is None:
+        key = lambda x: x
+
+    previous = next(iterator)
+
+    # Yield first item as-is
+    yield previous
+
+    for i in iterator:
+        print(i)
+        current = key(i)
+
+        if current != previous:
+            previous = current
+            yield i
+
+
 def main():
     args = docopt(__doc__, version='0.1.0')
 
     file = args['<file>']
     reverse = args['--reverse']
+    unique_ = args['--unique']
 
     if file is None:
         file = SeekableFile(sys.stdin)
@@ -85,6 +109,9 @@ def main():
 
     # Sort index by value (here, tweet ID)
     index = sorted(index, key=itemgetter(1), reverse=reverse)
+
+    if unique_:
+        index = unique(index)
 
     for i in map(itemgetter(0), index):
         file.seek(i)

@@ -1,5 +1,5 @@
-twdump
-======
+`twdump`
+========
 
 Dump all tweets for a Twitter account.
 
@@ -9,13 +9,21 @@ Description
 Twitter allows each user to download its own archive, but this operation
 isn't easily scriptable and is limited to your own data.
 
-**twdump**'s purpose is to provide a simple tool to dump the last
+`twdump`'s purpose is to provide a simple tool to dump the last
 3200 tweets of an account (the API don't allow to dump more than this),
 and can dump the tweets fresher than a tweet ID.
 
 The output is the raw JSON from Twitter API. Each line of output contains
 the JSON object representing a tweet, so you should not parse the whole
 output as JSON; get it line by line and parse each line at once.
+
+---
+
+I also include a `twdump-sort` script, that can sort a dump file by ID,
+in ascendant or descendant order. Useful if you append multiple dumps into
+the same file, since the API returns new tweets first.
+
+It can also remove duplicate tweets (based on the ID).
 
 Dependencies
 ------------
