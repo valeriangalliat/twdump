@@ -50,6 +50,10 @@ def itimeline(timeline, **kwargs):
 
     tweets = timeline(**kwargs)
 
+    # Will be overriden below
+    if 'max_id' in kwargs:
+        del kwargs['max_id']
+
     while len(tweets):
         for tweet in tweets:
             yield tweet
