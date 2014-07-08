@@ -1,4 +1,4 @@
-Twdump
+twdump
 ======
 
 Dump all tweets for a Twitter account.
@@ -9,7 +9,7 @@ Description
 Twitter allows each user to download its own archive, but this operation
 isn't easily scriptable and is limited to your own data.
 
-**Twdump**'s purpose is to provide a simple tool to dump the last
+**twdump**'s purpose is to provide a simple tool to dump the last
 3200 tweets of an account (the API don't allow to dump more than this),
 and can dump the tweets fresher than a tweet ID.
 
@@ -21,9 +21,9 @@ Dependencies
 ------------
 
 * `python3`
-* `configobj` <https://pypi.python.org/pypi/configobj/5.0.5>
-* `docopt` <https://pypi.python.org/pypi/docopt/0.6.2>
-* `twitter` <https://pypi.python.org/pypi/twitter>
+  * `configobj` <https://pypi.python.org/pypi/configobj/5.0.5>
+  * `docopt` <https://pypi.python.org/pypi/docopt/0.6.2>
+  * `twitter` <https://pypi.python.org/pypi/twitter>
 
 Installation
 ------------
