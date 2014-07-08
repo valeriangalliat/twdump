@@ -1,4 +1,4 @@
-all: pep8
+all: lint
 
-pep8:
+lint:
 	pep8 twdump
