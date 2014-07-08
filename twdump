@@ -19,6 +19,7 @@ Options:
   --oauth-secret=<secret>     Client OAuth secret.
 '''
 
+import json
 import sys
 
 from configobj import ConfigObj
@@ -98,7 +99,7 @@ def get_auth(args):
 
 
 def main():
-    args = docopt(__doc__, version='0.2')
+    args = docopt(__doc__, version='0.3.0')
 
     name = args['<name>']
     since = args['--since']
@@ -110,7 +111,10 @@ def main():
                        screen_name=name, count=2, since_id=since, max_id=max)
 
     for tweet in tweets:
-        print(tweet)
+        json.dump(tweet, sys.stdout)
+
+        # Append newline
+        print()
 
 
 if __name__ == '__main__':
