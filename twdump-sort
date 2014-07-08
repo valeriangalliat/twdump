@@ -102,9 +102,11 @@ def main():
         file = File(open(file, 'r'))
 
     index = []
+    i = 0
 
-    for i, line in enumerate(file):
+    for line in file:
         index.append((i, json.loads(line)['id']))
+        i += len(line)
 
     # Sort index by value (here, tweet ID)
     index = sorted(index, key=itemgetter(1), reverse=reverse)
