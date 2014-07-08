@@ -82,8 +82,8 @@ def get_auth(args):
         config = ConfigObj(config_file)
         err = lambda x: 'Missing key `{0}` in `{1}`.'.format(x, config_file)
     else:
-        kta = lambda x: '--' + x.replace('_', '-') # Key to arg
-        kas = {k: kta(k) for k in keys} # Key args dict
+        # Key args dict
+        kas = {k: '--' + k.replace('_', '-') for k in keys}
 
         config = {k: args[a] for k, a in kas.items() if args[a] is not None}
         err = lambda x: 'Missing argument `{0}`.'.format(kas[x])
@@ -98,7 +98,7 @@ def get_auth(args):
 
 
 def main():
-    args = docopt(__doc__, version='0.1')
+    args = docopt(__doc__, version='0.2')
 
     name = args['<name>']
     since = args['--since']
