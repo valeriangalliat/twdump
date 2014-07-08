@@ -82,7 +82,6 @@ def unique(iterable, key=None):
     yield previous
 
     for i in iterator:
-        print(i)
         current = key(i)
 
         if current != previous:
