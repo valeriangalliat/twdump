@@ -17,13 +17,8 @@ The output is the raw JSON from Twitter API. Each line of output contains
 the JSON object representing a tweet, so you should not parse the whole
 output as JSON; get it line by line and parse each line at once.
 
----
-
-I also include a `twdump-sort` script, that can sort a dump file by ID,
-in ascendant or descendant order. Useful if you append multiple dumps into
-the same file, since the API returns new tweets first.
-
-It can also remove duplicate tweets (based on the ID).
+This software comes with a set of additional tools to work with the dump
+file. Watch the [Tools](#tools) section.
 
 Dependencies
 ------------
@@ -91,4 +86,44 @@ Dump all your tweets greater than the tweet with ID 12345:
 
 ```sh
 ./twdump --config twdump.conf --since 12345 youraccount
+```
+
+Tools
+-----
+
+### `twdump-sort`
+
+`twdump-sort` can sort a dump file by ID, in ascendant or descendant order.
+
+It's useful if you append multiple dumps into the same file, since the API
+returns new tweets first.
+
+It can also remove duplicate tweets (based on the ID).
+
+```sh
+./twdump-sort --reverse --unique twdump.txt > txdump-sorted.txt
+```
+
+### `twdump-list`
+
+`twdump-list` is an helper to display a particular JSON key from a dump
+file. By default it takes `text` which is the tweet text.
+
+If I have a file containing the following tweets:
+
+```json
+{"id": 24, "text": "Hello world!"}
+{"id": 42, "text": "They see me dumpin'.\nThey hatin'."}
+{"id": 1337, "text": "Another tweet."}
+```
+
+... the output will be:
+
+```
+24: Hello world!
+--
+42: They see me dumpin'.
+42: They hatin'.
+--
+1337: Another tweet.
 ```
