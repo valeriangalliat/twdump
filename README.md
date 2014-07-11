@@ -159,7 +159,7 @@ by ID!
 Repeat the last operation (updating the `--max` value everytime) until
 you have everything (the script will end without error).
 
-Note that the API will return only your last 3,200. If you have more tweets,
+Note that the API will return only your last 3,200 tweets. If you have more,
 you'd better download your Twitter archive (from the settings page) and
 convert it to `twdump`'s format.
 
