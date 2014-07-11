@@ -10,7 +10,7 @@ Twitter allows each user to download its own archive, but this operation
 isn't easily scriptable and is limited to your own data.
 
 `twdump`'s purpose is to provide a simple tool to dump the last
-3200 tweets of an account (the API don't allow to dump more than this),
+3,200 tweets of an account (the API don't allow to dump more than this),
 and can dump the tweets fresher than a tweet ID.
 
 The output is the raw JSON from Twitter API. Each line of output contains
@@ -18,7 +18,8 @@ the JSON object representing a tweet, so you should not parse the whole
 output as JSON; get it line by line and parse each line at once.
 
 This software comes with a set of additional tools to work with the dump
-file. Watch the [Tools](#tools) section.
+file, including a shell script to help backuping new tweets with a cron job.
+Watch the [Tools](#tools) section.
 
 Dependencies
 ------------
@@ -127,3 +128,29 @@ If I have a file containing the following tweets:
 --
 1337: Another tweet.
 ```
+
+### `twdump-cron`
+
+Probably the most useful tool in this page (but I put it at the end of the
+readme... UX, I'm doing it wrong). `twdump-cron` will use all the above
+tools to append your latest tweets in a file.
+
+It takes at first arguments the file you store your tweets in, and all
+other arguments are passed to `twdump` (so you'll want to add all the
+keys, or a config file, and your Twitter name).
+
+If you want the backup to happen everyday (at midnight):
+
+```sh
+@daily /path/to/twdump-cron /path/to/tweets.txt -c /path/to/twdump.conf youraccount
+```
+
+The first time, you may run into API rate exceptions. It's better to
+download everything "by hand" to begin (simply by running `twdump-cron`
+multiple times until you get everything, waiting a dozen of minutes between
+calls. Note that the API will return only your last 3,200.
+
+If you have more tweets, you'd better download your Twitter archive
+(from the settings page) and convert it to `twdump`'s format. If you write
+a script for this, feel free to make a pull request, I'd be glad to merge
+it!
