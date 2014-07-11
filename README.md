@@ -146,11 +146,22 @@ If you want the backup to happen everyday (at midnight):
 ```
 
 The first time, you may run into API rate exceptions. It's better to
-download everything "by hand" to begin (simply by running `twdump-cron`
-multiple times until you get everything, waiting a dozen of minutes between
-calls. Note that the API will return only your last 3,200.
+download everything "by hand" to begin. For this, you run the cron until
+you get an API error. Then, you take the last tweet ID from the list
+(the oldest retrieved), and you pass it to the `--max` option for the
+next call.
 
-If you have more tweets, you'd better download your Twitter archive
-(from the settings page) and convert it to `twdump`'s format. If you write
-a script for this, feel free to make a pull request, I'd be glad to merge
-it!
+To avoid duplicates, you have to substract 1 to it since the `--max` option
+includes the given tweet ID, but in case you forget it, keep in mind the
+`twdump-sort` script can take a `--unique` option to deduplicate tweets
+by ID!
+
+Repeat the last operation (updating the `--max` value everytime) until
+you have everything (the script will end without error).
+
+Note that the API will return only your last 3,200. If you have more tweets,
+you'd better download your Twitter archive (from the settings page) and
+convert it to `twdump`'s format.
+
+If you write a script for this, feel free to make a pull request, I'd be
+glad to merge it!
