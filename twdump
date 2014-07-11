@@ -11,7 +11,7 @@ Options:
   -s, --since=<since>         Get tweets greater than <since> ID (get
                               everything by default).
   -m, --max=<max>             Get tweets older than <max> ID.
-  --config=<config>           Config file. Auth keys will be read from this
+  -c, --config=<config>       Config file. Auth keys will be read from this
                               file if not given by commandline options.
   --consumer-key=<key>        Application API key.
   --consumer-secret=<secret>  Application API secret.
