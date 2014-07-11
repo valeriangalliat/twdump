@@ -18,8 +18,8 @@ the JSON object representing a tweet, so you should not parse the whole
 output as JSON; get it line by line and parse each line at once.
 
 This software comes with a set of additional tools to work with the dump
-file, including a shell script to help backuping new tweets with a cron job.
-Watch the [Tools](#tools) section.
+file, **including a shell script to help backuping new tweets with a cron
+job**. Watch the [Tools](#tools) section.
 
 Dependencies
 ------------
