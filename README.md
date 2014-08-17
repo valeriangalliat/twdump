@@ -1,10 +1,10 @@
 `twdump`
 ========
 
-Dump all tweets for a Twitter account.
+> Dump all tweets for a Twitter account.
 
-Description
------------
+Overview
+--------
 
 Twitter allows each user to download its own archive, but this operation
 isn't easily scriptable and is limited to your own data.
@@ -25,8 +25,8 @@ Dependencies
 ------------
 
 * `python3`
-  * `configobj` <https://pypi.python.org/pypi/configobj/5.0.5>
-  * `docopt` <https://pypi.python.org/pypi/docopt/0.6.2>
+  * `configobj` <https://pypi.python.org/pypi/configobj>
+  * `docopt` <https://pypi.python.org/pypi/docopt>
   * `twitter` <https://pypi.python.org/pypi/twitter>
 
 Installation
@@ -35,10 +35,12 @@ Installation
 After installing the dependencies above, you'll need to retrieve your
 Twitter consumer key, secret, OAuth token and secret.
 
-To get these, you need to [create a Twitter application](https://apps.twitter.com/app/new).
+To get these, you need to [create a Twitter application][twapp].
 Once created, you'll find the keys in the "API Keys" tab.
 
 Then, clone this repository and you can call `./twdump`.
+
+[twapp]: https://apps.twitter.com/app/new
 
 Bugs
 ----
