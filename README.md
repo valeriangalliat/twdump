@@ -1,5 +1,5 @@
-`twdump`
-========
+twdump
+======
 
 > Dump all tweets for a Twitter account.
 
@@ -9,7 +9,7 @@ Overview
 Twitter allows each user to download its own archive, but this operation
 isn't easily scriptable and is limited to your own data.
 
-`twdump`'s purpose is to provide a simple tool to dump the last
+twdump's purpose is to provide a simple tool to dump the last
 3,200 tweets of an account (the API don't allow to dump more than this),
 and can dump the tweets fresher than a tweet ID.
 
@@ -94,9 +94,9 @@ Dump all your tweets greater than the tweet with ID 12345:
 Tools
 -----
 
-### `twdump-sort`
+### twdump-sort
 
-`twdump-sort` can sort a dump file by ID, in ascendant or descendant order.
+twdump-sort can sort a dump file by ID, in ascendant or descendant order.
 
 It's useful if you append multiple dumps into the same file, since the API
 returns new tweets first.
@@ -107,9 +107,9 @@ It can also remove duplicate tweets (based on the ID).
 ./twdump-sort --reverse --unique twdump.txt > txdump-sorted.txt
 ```
 
-### `twdump-list`
+### twdump-list
 
-`twdump-list` is an helper to display a particular JSON key from a dump
+twdump-list is an helper to display a particular JSON key from a dump
 file. By default it takes `text` which is the tweet text.
 
 If I have a file containing the following tweets:
@@ -131,14 +131,14 @@ If I have a file containing the following tweets:
 1337: Another tweet.
 ```
 
-### `twdump-cron`
+### twdump-cron
 
 Probably the most useful tool in this page (but I put it at the end of the
-readme... UX, I'm doing it wrong). `twdump-cron` will use all the above
+readme... UX, I'm doing it wrong). twdump-cron will use all the above
 tools to append your latest tweets in a file.
 
 It takes at first arguments the file you store your tweets in, and all
-other arguments are passed to `twdump` (so you'll want to add all the
+other arguments are passed to twdump (so you'll want to add all the
 keys, or a config file, and your Twitter name).
 
 If you want the backup to happen everyday (at midnight):
@@ -155,7 +155,7 @@ next call.
 
 To avoid duplicates, you have to substract 1 to it since the `--max` option
 includes the given tweet ID, but in case you forget it, keep in mind the
-`twdump-sort` script can take a `--unique` option to deduplicate tweets
+twdump-sort script can take a `--unique` option to deduplicate tweets
 by ID!
 
 Repeat the last operation (updating the `--max` value everytime) until
@@ -163,7 +163,7 @@ you have everything (the script will end without error).
 
 Note that the API will return only your last 3,200 tweets. If you have more,
 you'd better download your Twitter archive (from the settings page) and
-convert it to `twdump`'s format.
+convert it to twdump's format.
 
 If you write a script for this, feel free to make a pull request, I'd be
 glad to merge it!
