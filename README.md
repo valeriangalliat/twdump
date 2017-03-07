@@ -62,9 +62,9 @@ Dump all tweets for your account:
 ```sh
 ./twdump \
     --consumer-key "$consumer_key" \
-    --consumer-secret "$consumer_key" \
-    --oauth-token "$consumer_token" \
-    --oauth-key "$consumer_key" \
+    --consumer-secret "$consumer_secret" \
+    --oauth-token "$oauth_token" \
+    --oauth-secret "$oauth_secret" \
     youraccount
 ```
 
